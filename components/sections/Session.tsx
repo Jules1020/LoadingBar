@@ -355,10 +355,14 @@ export function Session() {
         createPortal(
           <div role="dialog" aria-modal="true" aria-label={`${duration} minute focus session`} className="overlay-in app-bg fixed inset-0 z-50">
             <p ref={announceRef} aria-live="polite" className="sr-only" />
-            <LoadingScreen id={look.screen} skin={look.bar} task={task.trim()} line={showLines && phase === "running" ? line : null} />
+            {/* The screen gets its own stacking context: layers it raises (CD, turntable, titles) can
+                never cover the session controls or the end screen, whatever z-index they use. */}
+            <div className="absolute inset-0 isolate">
+              <LoadingScreen id={look.screen} skin={look.bar} task={task.trim()} line={showLines && phase === "running" ? line : null} />
+            </div>
 
             {phase === "running" && (
-              <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+              <div className="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
                 {admin && (
                   <button
                     type="button"
@@ -433,7 +437,7 @@ function ResultCard({ children }: { children: React.ReactNode }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: motionTokens.duration.normal }}
-      className="absolute inset-0 grid place-items-center bg-bg/60 backdrop-blur-sm"
+      className="absolute inset-0 z-20 grid place-items-center bg-bg/60 backdrop-blur-sm"
     >
       <m.div
         initial={{ opacity: 0, y: 16, scale: 0.97 }}
