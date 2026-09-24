@@ -201,6 +201,7 @@ export function Download({ skin, line, preview, task }: ScreenProps) {
 }
 
 // ---------- Cassette: tape winds from one reel to the other ----------
+const STRIPE_W = 284
 const R_MIN = 9.5
 const R_MAX = 21
 
@@ -213,6 +214,7 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
   const leftHub = useRef<SVGGElement>(null)
   const rightHub = useRef<SVGGElement>(null)
   const counter = useRef<HTMLSpanElement>(null)
+  const stripe = useRef<SVGRectElement>(null)
   const gb = useRef<HTMLSpanElement>(null)
   const earned = useRef<HTMLSpanElement>(null)
   const state = useRef({ p: preview?.p ?? 0, gbps: preview?.gbps ?? 0, a: 0, b: 0 })
@@ -224,7 +226,9 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
   useScreenFrame(preview, (f) => {
     state.current.p = f.p
     state.current.gbps = f.gbps
-    setText(counter.current, String(Math.floor(f.p * 999)).padStart(3, "0"))
+    // Padded to a fixed width so the counter box doesn't jump at 10% and 100%.
+    setText(counter.current, `${(Math.floor(f.p * 1000) / 10).toFixed(1)}%`.padStart(6, " "))
+    stripe.current?.setAttribute("width", (STRIPE_W * f.p).toFixed(2))
     setText(gb.current, f.gbps.toFixed(1))
     setText(earned.current, fmtShort(f.earned))
   })
@@ -269,7 +273,9 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
         {[14, 306].map((x) => [14, 186].map((y) => <circle key={`${x}${y}`} cx={x} cy={y} r="3.5" fill="#15161a" stroke="#5c5f69" />))}
         {/* label */}
         <rect x="18" y="14" width="284" height="116" rx="6" fill="#f1e9d8" />
-        <rect x="18" y="28" width="284" height="8" fill={accent} />
+        {/* The label's stripe is the loading bar: a faint track that fills with progress. */}
+        <rect x="18" y="28" width={STRIPE_W} height="8" fill={accent} opacity="0.22" />
+        <rect ref={stripe} x="18" y="28" width="0" height="8" fill={accent} />
         <rect x="18" y="38" width="284" height="3" fill="var(--color-go)" />
         <text x="30" y="60" fontSize="15" fontWeight="700" fill="#2a2320" style={{ fontFamily: "var(--font-display)" }}>
           {(task || `${track.title} mix`).slice(0, 32)}
@@ -297,8 +303,8 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
       </svg>
 
       <div className="flex items-center gap-[4cqw]">
-        <div className="rounded-md border border-line-2 bg-black/40 px-[2cqh] py-[1cqh] font-mono text-[6cqh] leading-none tracking-[0.2em] text-fg tabular-nums">
-          <span ref={counter}>000</span>
+        <div className="rounded-md border border-line-2 bg-black/40 px-[2cqh] py-[1cqh] font-mono text-[6cqh] leading-none tracking-[0.06em] text-fg tabular-nums">
+          <span ref={counter} className="whitespace-pre">  0.0%</span>
         </div>
         <MusicControls preview={!!preview} size={6} />
         <p className="text-[2.6cqh] text-muted tabular-nums">
