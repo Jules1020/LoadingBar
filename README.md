@@ -1,106 +1,127 @@
-# `<LoadingBar>` — marketing / demo site
+<div align="center">
 
-A focus timer disguised as a game loading screen. This repo is the demo website, not the app.
+# `<LoadingBar>`
+
+**A focus timer disguised as a game loading screen.**
+
+Every work session is a loading bar. Your pets only earn while it fills.
+Finish it to spin the wheel, keep your streak alive, and spend what you earned.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-149eca?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)
+
+</div>
+
+---
+
+## The idea
+
+Timers are boring, and loading screens are hypnotic. `<LoadingBar>` turns a 25, 35 or 45-minute focus session
+into a download: the bar bursts, stalls and speeds up like a real installer, shows a live **GB/s**, and always
+lands on 100% exactly when your time is up.
+
+Leave early (switch tabs, abort, `Ctrl+C`) and the session is forfeited, along with everything your pets earned.
+
+## How it plays
+
+| | |
+|---|---|
+| ⏳ **Load** | Pick a length and start. The whole screen becomes the loading screen, no tabs, no distractions. |
+| 🐾 **Earn** | Your pets pay out on spinning wheels in the corners, but **only while the bar is running**. |
+| 🎰 **Spin** | A finished bar earns one spin: pets from Common to Secret, streak freezes, or cosmetics. |
+| 🔥 **Streak** | Hit your days-per-week target to grow a flame that multiplies all income (up to ×3). It follows the real calendar. |
+| 🛒 **Spend** | Upgrade pets, buy freezes and 2× boosts, or save up for Legendary cosmetics ($5M and up). |
+| 🏆 **Compete** | Sign in to appear on the podium for money, pets collected and streak. |
+
+## Features
+
+**12 loading screens**, each a different way to watch the bar fill:
+Classic · Minimal · Terminal boot log · Orbit · Boss fight (drain Procrastination's HP) · CD Player · Matrix rain ·
+Download page with a live bandwidth graph · Cassette (tape winds reel to reel) · Handheld console ·
+Turntable (the tonearm tracks progress) · Warp drive (the stars stretch with the GB/s).
+
+**17 themes**, including five that change the whole layout: MS-DOS (pixel font, F-key bar at the bottom),
+Editorial (serif, left sidebar), Arcade (pixel headings and scanlines), Brutalist (light paper, tabs on the right)
+and Outrun (chrome type, floating dock).
+
+**12 loading bar skins**, from plain to Barber stripes, 8-bit steps, 24K gold, Glitch and Prism.
+
+**30 pets** across 7 rarities, drawn as vector characters, each with its own earning rate and 10 upgrade levels.
+
+**Profiles** like Steam and Discord: display name, status, bio, avatar (initial, pet or your own image), level,
+badges and a pet showcase, plus animated backgrounds, avatar frames and name styles bought with in-game money.
+
+**Music** in a mini player: four lo-fi stations generated live in the browser, or drop in your own audio files
+and cover art (the cover spins under a see-through CD).
+
+**Progress**: streak calendar with freezes, a focus heatmap, session history, 21 achievements and leaderboards.
+
+**Accounts** are optional. Guests play in their browser; signed-in players get a cloud save.
+
+## Run it
+
+Requires Node.js 20+.
 
 ```bash
+git clone https://github.com/Jules1020/LoadingBar.git
+cd LoadingBar
 npm install
-npm run dev        # http://localhost:3000
-npm run build && npm start
+npm run dev
 ```
 
-Stack: Next.js 16 (App Router) · Tailwind CSS 4 · `motion/react` · `lucide-react` icons · Geist font. No image assets.
+Open http://localhost:3000. That's it: everything works as a guest with no configuration.
 
-UI: a fixed-height app shell (top bar + one view). Pages are laid out to fit the window, so the page itself never
-scrolls; the pet grid scrolls inside its own panel. Fullscreen (top-right button or `F`) uses the Fullscreen API on the
-document root, and all navigation is client-side, so fullscreen survives page changes.
+### Optional: admin account
 
-## Pages
+One account can be the admin, with prototype tools in **Settings → Admin** (session speed-up, unlock everything,
+money, rigging the wheel, sending gifts to players, a site-wide announcement and more).
 
-| key | route | What's there |
-|-----|-------|--------------|
-| 1 | `/` | Home: ▲ start, today's sessions, length picker (presets + custom), wallet. **Enter** starts. |
-| 2 | `/session` | Preview of your loading screen + setup. Start → full-window loading screen, app chrome hidden. |
-| 3 | `/wheel` | Locked until a session is finished. 16 segments: 7 pet rarities, freezes, cosmetics. |
-| 4 | `/pets` | Steal-a-Brainrot style base: vector pets on pedestals, `$/s` overhead, cash pads to collect. |
-| – | `/shop` | Spend money: streak freezes, 2× next-session boost, cosmetics, pet upgrades (+20% $/s per level). |
-| – | `/podium` | Leaderboards (top 10 signed-in players) for money, pets collected and streak, with profile looks. |
-| – | `/profile` | Steam/Discord-style profile: name, status, bio, avatar (initial, pet or image), colors, level, badges, pet showcase. Animated backgrounds, avatar frames and name styles are bought with money. |
-| 5 | `/streak` | Days/week target, freezes, flame multiplier, streak-only cosmetic rewards. |
-| 6 | `/roadmap` | What's next. |
-| 7 | `/stats` | Focus heatmap, totals, recent sessions, pulls by rarity, achievements. |
-| 8 | `/settings` | Skins, themes, screens, daily goal, music files, backup/import, admin tools (admin only). |
-| – | `/login` | Sign in / create account (optional; guests play locally). |
-| 9 | `/join` | Waitlist form → `POST /api/waitlist`. |
+```bash
+cp .env.example .env.local
+npm run hash-password -- "choose a password"   # paste the output into ADMIN_PASSWORD_HASH
+openssl rand -hex 32                           # paste into AUTH_SECRET
+```
 
-### Session rules
-- The bar follows a "real download" curve (`lib/progress.ts`): bursts and stalls, but always hits 100% at the end.
-  The GB/s readout follows the bar's current speed. No time-left display.
-- Pets **only earn while a session runs**. Payouts on the corner wheels are each pet's exact earnings; finishing puts
-  them on the pets' pads, forfeiting (Ctrl+C, abort, or hiding the tab >1.5s) loses them.
-- Session speed (Settings → Session): real time, ×10 or ×60 for testing.
+Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and password.
 
-### Customization
-`lib/cosmetics.ts` lists every bar skin, theme and loading screen, with rarity and source (wheel drop or N-week
-streak), plus shop prices (legendary $5M, mythic $25M, secret $150M).
+## Keyboard
 
-- **Layout themes** change the font *and* where the tabs are: MS-DOS (VT323, F-key bar at the bottom), Editorial
-  (Fraunces serif, left sidebar), Arcade (Press Start 2P headings, scanlines, left sidebar), Brutalist (light, Space
-  Grotesk, hard shadows, right sidebar), Outrun (Orbitron chrome type, bottom dock). `THEME_LAYOUT` maps a theme to a
-  tab position; the shell uses the `side:`, `side-l:`, `side-r:` and `dock:` Tailwind variants in `globals.css`, and the
-  boot script applies `data-nav` before first paint.
-- **Loading screens** (12): Classic, Minimal, Terminal, Orbit, CD Player, Matrix, Boss fight, Download (bandwidth
-  graph), Cassette (reels wind as it loads), Handheld (pocket console), Turntable (tonearm tracks progress, cover as
-  the label), Warp drive (starfield follows GB/s). New ones live in `components/screens/extra.tsx`.
+| Key | Action |
+|---|---|
+| `Enter` | Start a session |
+| `Ctrl` + `C` | Abort the running session |
+| `1`–`9` | Jump between pages |
+| `F` | Fullscreen (stays on across pages) |
+| `P` | Play or pause music |
+| `M` | Mute sound effects |
+| `?` | Show all shortcuts |
 
-### Profiles
-`lib/profile.ts` has the profile items (12 backgrounds, 9 frames, 7 name styles) and their prices; their looks are
-the `.pbg-*`, `.pframe-*` and `.pname-*` classes in `globals.css`, driven by the two profile colors. Uploaded avatars
-are cropped to 160×160 JPEG so they fit in the save.
+## Under the hood
 
-### Music
-Bottom-center mini player. Four lo-fi stations are generated live with WebAudio (`lib/music.ts`); `+` adds your own
-audio files. Spotify would need its own developer app + OAuth, so it's on the roadmap.
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript** · **Tailwind CSS 4** · **Motion** · **Lucide** icons.
+- No images or audio files ship with it: pets are SVG built from parts, sounds and music are synthesized with the
+  Web Audio API, and every animation is CSS or `requestAnimationFrame`.
+- The loading screens update the DOM directly at 60 fps from a small event emitter instead of re-rendering React.
+- Game state lives in a tiny external store (`useSyncExternalStore`), saved to `localStorage`, and synced to the
+  account's cloud save when signed in. User audio and covers are kept in IndexedDB.
+- Auth is built in: scrypt password hashes, HMAC-signed http-only cookies, rate-limited logins.
 
-## Accounts & admin
-- Optional accounts: `POST /api/auth/signup|login|logout`, `GET /api/auth/me`. Passwords are scrypt-hashed; the
-  session is an HMAC-signed, http-only cookie (`lb_session`, 30 days). Logins are rate-limited.
-- Signed-in users get a cloud save (`GET/PUT /api/save`). Storage is file-based in `.data/` (git-ignored); swap
-  `lib/server/db.ts` for a real database before deploying.
-- The admin account is configured in `.env.local` (`ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `AUTH_SECRET`). Signed in
-  as admin you get the Admin tab in Settings (unlock-all, demo speeds, resources, calendar tools). Everyone else
-  plays by the normal rules. Game state is client-side, so admin gating is a UI gate, not anti-cheat.
+```
+app/                 pages and API routes (auth, save, leaderboard, admin, inbox)
+components/          app shell, player, pets, wheel dial…
+components/sections/ one component per page
+components/screens/  the loading screens
+lib/                 game data, store, cosmetics, profiles, music, streak math
+lib/server/          auth and file-based storage (server only)
+```
 
-## Admin extras
-Settings → Admin (admin only):
-- God mode: unlock everything, free shopping, infinite spins; income multiplier ×10/×100/×1000; rig the wheel to
-  always land on a chosen result; session speed up to ×3600 plus a **Finish now** button on the loading screen.
-- Money: +$1M/+$1B, set the wallet to any amount, +50 spins, +10 freezes, 2× next session.
-- Pets: every pet, max levels, spawn any pet at any level, fill every pad with 24 h of earnings, release all.
-- Own every cosmetic and profile item for real; +4/+12 good weeks; log sessions on any date.
-- **Announcement** banner shown to every player (`PUT /api/admin/announce`).
-- **Accounts** table: send money or spins, reset progress, or delete. Gifts are queued server-side
-  (`POST /api/admin/gift`, `.data/inbox/`) and applied the next time that player's app checks `GET /api/inbox`
-  (on load and every minute), because each player's browser owns their save.
+## Status
 
-Other endpoints: `GET/DELETE /api/admin/users` (403 unless admin), public `GET /api/leaderboard` (emails masked,
-display names and profile looks shown; uploaded avatars stay private).
+This is a playable prototype of the site. A few things to know before deploying it anywhere:
 
-## Music covers
-The player's image button (or Settings → Audio & music) attaches cover art to any track; it's stored in
-IndexedDB and spins on the CD, in the mini player and on the CD Player loading screen.
-
-## Dates & streaks
-Finished sessions are logged per local day (`history`). A week (Mon–Sun) is good when enough days have a finished
-session or a freeze; consecutive good weeks = the streak (`lib/streak.ts`). The app re-checks the date every 30 s.
-
-## Where to change things
-
-- Theme tokens: `app/globals.css` (`@theme` + one `:root[data-theme=…]` block per theme)
-- Pets (vector bodies, `Avatar` specs drawn by `components/PetAvatar.tsx`), odds, flame tiers, loading lines, boot lines: `lib/data.ts`
-- Motion durations/easings/springs: `lib/motion-tokens.ts`
-- Sounds (WebAudio, no files): `lib/audio.ts`
-
-## TODO
-
-- `app/api/waitlist/route.ts` validates the email and returns `200` but **does not store it yet**. Wire it to a
-  real list provider before launch.
+- Accounts and cloud saves are stored as JSON files in `.data/`. Swap `lib/server/db.ts` for a real database on
+  any host with an ephemeral filesystem.
+- Game logic runs in the browser, so the admin tools are a UI gate, not anti-cheat.
+- The early-access form validates emails but doesn't store them yet (`app/api/waitlist/route.ts`).

@@ -6,3 +6,7 @@ next-env.d.ts
 .env*.local
 .DS_Store
 .data
+
+# local tooling
+.claude
+!.env.example

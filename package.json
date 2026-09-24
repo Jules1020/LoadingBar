@@ -1,12 +1,13 @@
 {
-  "name": "loadingbar-site",
+  "name": "loadingbar",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.47.0",
@@ -22,5 +23,10 @@
     "@types/react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
+  },
+  "description": "A focus timer disguised as a game loading screen: fill the bar, spin the wheel, let your pets earn.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jules1020/LoadingBar"
   }
 }
