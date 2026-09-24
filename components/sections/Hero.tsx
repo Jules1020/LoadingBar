@@ -3,7 +3,8 @@
 import { useCallback, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { motion, useReducedMotion } from "motion/react"
+import { useReducedMotion } from "motion/react"
+import * as m from "motion/react-m"
 import { ArrowRight, Flame, PawPrint, Ticket } from "lucide-react"
 import { fmtMoney, fmtShort } from "@/lib/format"
 import { isEditable } from "@/lib/hooks"
@@ -54,7 +55,7 @@ export function Hero() {
       style={{ paddingBottom: "var(--player-space, 16px)" }}
     >
       {/* Start: the big triangle from the mockup, as a play button */}
-      <motion.button
+      <m.button
         type="button"
         onClick={start}
         aria-label={`Start a ${duration} minute session`}
@@ -82,7 +83,7 @@ export function Hero() {
           {duration} min · press{" "}
           <kbd className="rounded border border-line-2 bg-white/5 px-1.5 py-0.5 font-sans text-xs text-fg">Enter</kbd>
         </span>
-      </motion.button>
+      </m.button>
 
       <div className="order-1 min-w-0 md:order-2">
         <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase" suppressHydrationWarning>

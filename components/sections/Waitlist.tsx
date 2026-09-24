@@ -74,8 +74,8 @@ export function Waitlist() {
           {done ? (
             <div className="relative flex flex-col items-start" role="status">
               <CheckCircle2 aria-hidden className="size-10 text-go-2" />
-              <p className="mt-4 text-2xl font-semibold tracking-tight">You're on the list</p>
-              <p className="mt-1 text-muted">We'll email {email.trim()} when the bar hits 100%.</p>
+              <p className="mt-4 text-2xl font-semibold tracking-tight">You’re on the list</p>
+              <p className="mt-1 text-muted">We’ll email {email.trim()} when the bar hits 100%.</p>
             </div>
           ) : (
             <form onSubmit={submit} noValidate className="relative">

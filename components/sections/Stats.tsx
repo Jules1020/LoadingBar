@@ -5,7 +5,7 @@ import { ACHIEVEMENTS, stats } from "@/lib/achievements"
 import { RARITY, type WheelKind } from "@/lib/data"
 import { fmtDate } from "@/lib/dates"
 import { fmtMoney, fmtShort } from "@/lib/format"
-import { streakOf, useStore } from "@/lib/store"
+import { streakOf, useStore, useStoreShallow } from "@/lib/store"
 import { PageFrame } from "../PageFrame"
 import { Heatmap } from "../Heatmap"
 
@@ -14,8 +14,8 @@ const ORDER: WheelKind[] = ["common", "uncommon", "rare", "epic", "legendary", "
 const fmtMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`)
 
 export function Stats({ bare = false }: { bare?: boolean }) {
-  const s = useStore((st) => st)
-  const streak = streakOf(s)
+  const s = useStoreShallow((st) => ({ history: st.history, pulls: st.pulls, sessions: st.sessions, achievements: st.achievements, lifetimeEarned: st.lifetimeEarned }))
+  const streak = useStore(streakOf)
   const sessions = stats.totalSessions(s)
   const minutes = stats.totalMinutes(s)
   const pulls = s.pulls
@@ -76,7 +76,7 @@ export function Stats({ bare = false }: { bare?: boolean }) {
           <div className="panel flex max-h-[420px] min-h-[260px] flex-col p-4 lg:max-h-none">
             <p className="mb-3 text-xs font-medium text-muted">Recent sessions</p>
             {recent.length === 0 ? (
-              <p className="text-sm text-faint">No finished sessions yet. They'll show up here.</p>
+              <p className="text-sm text-faint">No finished sessions yet. They’ll show up here.</p>
             ) : (
               <ul className="scroll-thin -mr-2 min-h-0 flex-1 divide-y divide-line overflow-y-auto pr-2 text-sm">
                 {recent.map((e) => (

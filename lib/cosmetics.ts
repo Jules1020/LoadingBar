@@ -157,7 +157,7 @@ export const THEME_SWATCH: Record<string, [string, string, string, string]> = {
   "theme-dos": ["#0000aa", "#0000aa", "#ffff55", "#00aaaa"],
   "theme-editorial": ["#14110f", "#1d1916", "#e2553a", "#efe6d8"],
   "theme-arcade": ["#0d0221", "#1a0b3d", "#fffc00", "#00ff9f"],
-  "theme-brutal": ["#f4f1ea", "#ffffff", "#ff5a1f", "#111111"],
+  "theme-brutal": ["#f4f1ea", "#ffffff", "#bd4317", "#111111"],
   "theme-outrun": ["#14031f", "#240a3a", "#ff2a6d", "#ffb86c"],
 }
 

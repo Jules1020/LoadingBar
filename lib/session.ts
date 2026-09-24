@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useEffectEvent } from "react"
 import type { Rarity } from "./data"
 
 // Per-frame session data, broadcast outside React so loading screens can update
@@ -51,21 +51,19 @@ export const runtime = {
 
 /** Subscribe to frames; the callback always sees the latest closure. */
 export function useFrame(cb: FrameListener, enabled = true) {
-  const ref = useRef(cb)
-  ref.current = cb
+  const onFrame = useEffectEvent(cb)
   useEffect(() => {
     if (!enabled) return
-    ref.current(runtime.frame)
-    return runtime.onFrame((f) => ref.current(f))
+    onFrame(runtime.frame)
+    return runtime.onFrame((f) => onFrame(f))
   }, [enabled])
 }
 
 export function usePayouts(cb: PayoutListener, enabled = true) {
-  const ref = useRef(cb)
-  ref.current = cb
+  const onPayout = useEffectEvent(cb)
   useEffect(() => {
     if (!enabled) return
-    return runtime.onPayout((p) => ref.current(p))
+    return runtime.onPayout((p) => onPayout(p))
   }, [enabled])
 }
 

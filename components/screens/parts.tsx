@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { motionTokens } from "@/lib/motion-tokens"
 import { useFrame, type Frame } from "@/lib/session"
 
@@ -41,7 +42,7 @@ export function Line({ text, className = "" }: { text: string | null; className?
     <div className={`h-8 ${className}`}>
       <AnimatePresence mode="wait" initial={false}>
         {text && (
-          <motion.p
+          <m.p
             key={text}
             initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -50,7 +51,7 @@ export function Line({ text, className = "" }: { text: string | null; className?
             className="text-center text-muted"
           >
             {text}
-          </motion.p>
+          </m.p>
         )}
       </AnimatePresence>
     </div>

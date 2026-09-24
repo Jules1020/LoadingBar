@@ -1,23 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Megaphone, X } from "lucide-react"
 import { useAnnouncement } from "@/lib/inbox"
 
 const DISMISSED_KEY = "lb-announce-dismissed"
 
 /** Banner for the admin's broadcast. Dismissing hides that message only; a new one shows again. */
+function readDismissed() {
+  try {
+    return typeof window === "undefined" ? 0 : Number(localStorage.getItem(DISMISSED_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
 export function Announcement() {
   const a = useAnnouncement()
-  const [dismissed, setDismissed] = useState<number | null>(null)
-  useEffect(() => {
-    try {
-      setDismissed(Number(localStorage.getItem(DISMISSED_KEY)) || 0)
-    } catch {
-      setDismissed(0)
-    }
-  }, [])
-  if (!a || dismissed === null || dismissed === a.at) return null
+  // Safe to read storage up front: on the server and during hydration there's no announcement yet.
+  const [dismissed, setDismissed] = useState(readDismissed)
+  if (!a || dismissed === a.at) return null
   return (
     <div role="status" className="flex shrink-0 items-center gap-3 border-b border-gold/30 bg-gold/10 px-4 py-2 text-sm">
       <Megaphone aria-hidden className="size-4 shrink-0 text-gold" />

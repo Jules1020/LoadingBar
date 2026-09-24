@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { Keyboard, X } from "lucide-react"
 import { isEditable } from "@/lib/hooks"
 import { springs } from "@/lib/motion-tokens"
@@ -32,14 +33,14 @@ export function ShortcutsHelp() {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[75] grid place-items-center bg-bg/60 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
-          <motion.div
+          <m.div
             role="dialog"
             aria-modal="true"
             aria-label="Keyboard shortcuts"
@@ -66,8 +67,8 @@ export function ShortcutsHelp() {
                 </li>
               ))}
             </ul>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   )

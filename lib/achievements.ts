@@ -10,8 +10,8 @@ export type Achievement = {
   check: (s: State, streak: StreakInfo) => boolean
 }
 
-const totalSessions = (s: State) => Object.values(s.history).reduce((n, d) => n + d.sessions, 0)
-const totalMinutes = (s: State) => Object.values(s.history).reduce((n, d) => n + d.minutes, 0)
+const totalSessions = (s: Pick<State, "history">) => Object.values(s.history).reduce((n, d) => n + d.sessions, 0)
+const totalMinutes = (s: Pick<State, "history">) => Object.values(s.history).reduce((n, d) => n + d.minutes, 0)
 const hourOf = (at: number) => new Date(at).getHours()
 
 export const ACHIEVEMENTS: Achievement[] = [

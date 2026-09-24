@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { motion, useReducedMotion } from "motion/react"
+import { useReducedMotion } from "motion/react"
+import * as m from "motion/react-m"
 import { Coins, Crown, Flame, PawPrint, RefreshCw } from "lucide-react"
 import { fmtShort } from "@/lib/format"
 import { motionTokens, springs } from "@/lib/motion-tokens"
@@ -36,7 +37,6 @@ export function Podium({ bare = false }: { bare?: boolean }) {
 
   useEffect(() => {
     let alive = true
-    setError(false)
     fetch("/api/leaderboard", { cache: "no-store" })
       .then((r) => r.json())
       .then((b: Board) => alive && setBoard(b))
@@ -54,21 +54,24 @@ export function Podium({ bare = false }: { bare?: boolean }) {
       title="Leaderboards"
       subtitle="Every signed-in player, ranked by money, pets collected and current streak. Emails are masked."
       actions={
-        <Button size="sm" onClick={() => setTick((t) => t + 1)}>
+        <Button size="sm" onClick={() => {
+            setError(false)
+            setTick((t) => t + 1)
+          }}>
           <RefreshCw aria-hidden className="size-3.5" /> Refresh
         </Button>
       }
     >
       {!user && (
         <p className="mb-3 text-sm text-muted">
-          You're playing as a guest.{" "}
+          You’re playing as a guest.{" "}
           <Link href="/login" className="text-accent hover:underline">
             Sign in
           </Link>{" "}
           to appear on the podium (your progress syncs automatically).
         </p>
       )}
-      {error && <p className="text-sm text-danger">Couldn't load the leaderboard.</p>}
+      {error && <p className="text-sm text-danger">Couldn’t load the leaderboard.</p>}
       <div className="grid gap-4 lg:h-full lg:grid-cols-3">
         {CATEGORIES.map((c) => (
           <Category key={c.id} title={c.label} icon={c.icon} color={c.color} rows={board?.[c.id] ?? null} fmt={c.fmt} me={me} />
@@ -126,7 +129,7 @@ function Category({
                     </p>
                   </>
                 )}
-                <motion.div
+                <m.div
                   initial={{ scaleY: reduce ? 1 : 0 }}
                   animate={{ scaleY: 1 }}
                   transition={{ ...springs.gentle, delay: reduce ? 0 : places[i] * 0.08 }}
@@ -134,13 +137,13 @@ function Category({
                   className={`mt-1.5 grid w-full place-items-center rounded-t-md ${heights[i]}`}
                 >
                   <span className="text-2xl font-bold text-fg/80">{places[i]}</span>
-                </motion.div>
+                </m.div>
               </div>
             ))}
           </div>
           <ol className="scroll-thin mt-3 min-h-0 flex-1 divide-y divide-line overflow-y-auto text-sm">
             {rows.slice(3).map((r, i) => (
-              <motion.li
+              <m.li
                 key={r.name + i}
                 initial={{ opacity: 0, x: reduce ? 0 : -6 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -155,7 +158,7 @@ function Category({
                   </span>
                 </span>
                 <span className="font-semibold tabular-nums">{fmt(r.value)}</span>
-              </motion.li>
+              </m.li>
             ))}
           </ol>
         </>

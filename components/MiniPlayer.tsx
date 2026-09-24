@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { ChevronLeft, ImagePlus, Pause, Play, Plus, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react"
 import { music, restoreMusic, useMusic } from "@/lib/music"
 import { effectiveEquipped, useStore } from "@/lib/store"
@@ -82,7 +83,7 @@ export function MiniPlayer() {
   return (
     <AnimatePresence>
       {!hidden && (
-        <motion.div
+        <m.div
           key="player"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,7 +93,7 @@ export function MiniPlayer() {
           style={{ bottom: running ? 12 : "calc(var(--nav-bottom) + 12px)" }}
           className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-3"
         >
-          <motion.div
+          <m.div
             layout
             transition={springs.gentle}
             onDragOver={(e) => {
@@ -120,7 +121,7 @@ export function MiniPlayer() {
             </button>
             <AnimatePresence initial={false}>
               {expanded && (
-                <motion.div
+                <m.div
                   key="body"
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: "auto" }}
@@ -172,7 +173,7 @@ export function MiniPlayer() {
                   <button type="button" onClick={() => setOpen(false)} aria-label="Collapse music player" className={btn}>
                     <ChevronLeft className="size-4" />
                   </button>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
             <input
@@ -197,8 +198,8 @@ export function MiniPlayer() {
                 e.target.value = ""
               }}
             />
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   )
@@ -223,31 +224,38 @@ export function SpinningCD({
   topSpeed?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const playingRef = useRef(playing)
-  playingRef.current = playing
+  // Angle and speed survive the loop stopping, so a paused disc resumes where it rested.
+  const motion = useRef({ angle: 0, speed: 0 })
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const want = playing && !reduce ? topSpeed : 0
+    const st = motion.current
+    // Nothing to animate: don't keep a 60fps loop alive on every page.
+    if (!want && st.speed < 0.5) return
     let raf = 0
-    let angle = 0
-    let speed = 0 // deg/s
     let last = performance.now()
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
-      const want = playingRef.current && !reduce ? topSpeed : 0
-      speed += (want - speed) * Math.min(1, dt * (want ? 1.6 : 1.1))
-      angle = (angle + speed * dt) % 360
-      if (ref.current) ref.current.style.transform = `rotate(${angle}deg)`
+      st.speed += (want - st.speed) * Math.min(1, dt * (want ? 1.6 : 1.1))
+      st.angle = (st.angle + st.speed * dt) % 360
+      if (ref.current) ref.current.style.transform = `rotate(${st.angle}deg)`
+      if (!want && st.speed < 0.5) {
+        st.speed = 0
+        return
+      }
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [topSpeed])
+  }, [playing, topSpeed])
 
   return (
     <div aria-hidden className="relative shrink-0 rounded-full shadow-[0_2px_10px_rgb(0_0_0/0.5)]" style={{ width: size, height: size }}>
       {/* Cover art: the still background under the disc. */}
+      {/* Covers are local blob: URLs, which next/image can't optimize. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       {image && <img src={image} alt="" draggable={false} className="absolute inset-0 h-full w-full rounded-full object-cover" />}
       {/* The disc itself spins; with a cover it's see-through. */}
       <div

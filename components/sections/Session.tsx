@@ -1,15 +1,17 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { CheckCircle2, Disc3, FastForward, Play, Settings2, Ticket, TriangleAlert, X } from "lucide-react"
 import { byId } from "@/lib/cosmetics"
 import { LOADING_LINES } from "@/lib/data"
 import { fmtMoney, fmtShort } from "@/lib/format"
 import { makeCurve, BASE_GBPS } from "@/lib/progress"
-import { runtime } from "@/lib/session"
+import { runtime, useFrame } from "@/lib/session"
 import { creditSession, effectiveEquipped, effectiveSpeed, isAdmin, multiplier, petRate, store, totalRate, useStore, type SessionSpeed } from "@/lib/store"
 import { motionTokens, springs } from "@/lib/motion-tokens"
 import { sfx } from "@/lib/audio"
@@ -55,6 +57,9 @@ export function Session() {
   /** Admin: jumps the running bar to the end. */
   const skipRef = useRef<(() => void) | null>(null)
   const admin = useStore(isAdmin)
+  const abortRef = useRef<HTMLButtonElement>(null)
+  const announceRef = useRef<HTMLParagraphElement>(null)
+  const lastAnnounced = useRef(-1)
 
   const setP = (p: Phase) => {
     phaseRef.current = p
@@ -221,6 +226,29 @@ export function Session() {
     return () => window.clearInterval(id)
   }, [phase])
 
+  // The overlay is a modal dialog: the app behind it goes inert, focus moves in, and comes back after.
+  const open = phase !== "idle"
+  useEffect(() => {
+    if (!open) return
+    const shell = document.getElementById("app-shell")
+    const before = document.activeElement as HTMLElement | null
+    shell?.setAttribute("inert", "")
+    lastAnnounced.current = -1
+    abortRef.current?.focus()
+    return () => {
+      shell?.removeAttribute("inert")
+      before?.focus?.()
+    }
+  }, [open])
+
+  // Screen readers hear progress every 10%, not every frame.
+  useFrame((f) => {
+    const step = Math.floor(f.p * 10) * 10
+    if (step === lastAnnounced.current || !announceRef.current) return
+    lastAnnounced.current = step
+    announceRef.current.textContent = `${step}% loaded`
+  }, phase === "running")
+
   // Abort needs a second click within 2.5s.
   useEffect(() => {
     if (!armAbort) return
@@ -231,12 +259,11 @@ export function Session() {
   // "When the bar hits 100% it cuts to a spin."
   useEffect(() => {
     if (countdown === null) return
-    if (countdown === 0) {
+    const t = window.setTimeout(() => {
+      if (countdown > 1) return setCountdown(countdown - 1)
       store.set({ pendingSpin: true })
       close("/wheel")
-      return
-    }
-    const t = window.setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000)
+    }, 1000)
     return () => window.clearTimeout(t)
   }, [countdown, close])
 
@@ -324,64 +351,68 @@ export function Session() {
         </div>
       </PageFrame>
 
-      {phase !== "idle" && (
-        <div className="overlay-in app-bg fixed inset-0 z-50">
-          <LoadingScreen id={look.screen} skin={look.bar} task={task.trim()} line={showLines && phase === "running" ? line : null} />
+      {open &&
+        createPortal(
+          <div role="dialog" aria-modal="true" aria-label={`${duration} minute focus session`} className="overlay-in app-bg fixed inset-0 z-50">
+            <p ref={announceRef} aria-live="polite" className="sr-only" />
+            <LoadingScreen id={look.screen} skin={look.bar} task={task.trim()} line={showLines && phase === "running" ? line : null} />
 
-          {phase === "running" && (
-            <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
-              {admin && (
+            {phase === "running" && (
+              <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                {admin && (
+                  <button
+                    type="button"
+                    onClick={() => skipRef.current?.()}
+                    title="Admin: finish this session now (pets are paid in full)"
+                    className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-gold/50 bg-gold/15 px-3 text-xs font-semibold text-gold backdrop-blur transition-colors duration-200 hover:bg-gold/25 focus-visible:outline-2 focus-visible:outline-gold"
+                  >
+                    <FastForward aria-hidden className="size-3.5" /> Finish now
+                  </button>
+                )}
                 <button
+                  ref={abortRef}
                   type="button"
-                  onClick={() => skipRef.current?.()}
-                  title="Admin: finish this session now (pets are paid in full)"
-                  className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-gold/50 bg-gold/15 px-3 text-xs font-semibold text-gold backdrop-blur transition-colors duration-200 hover:bg-gold/25 focus-visible:outline-2 focus-visible:outline-gold"
+                  onClick={() => (armAbort ? forfeit("Aborted.") : setArmAbort(true))}
+                  className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-semibold backdrop-blur transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-accent ${
+                    armAbort ? "border-danger/50 bg-danger/20 text-danger" : "border-line bg-bg/60 text-muted hover:text-fg"
+                  }`}
                 >
-                  <FastForward aria-hidden className="size-3.5" /> Finish now
+                  <X aria-hidden className="size-3.5" /> {armAbort ? "Click again to forfeit" : "Abort"}
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => (armAbort ? forfeit("Aborted.") : setArmAbort(true))}
-                className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-semibold backdrop-blur transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-accent ${
-                  armAbort ? "border-danger/50 bg-danger/20 text-danger" : "border-line bg-bg/60 text-muted hover:text-fg"
-                }`}
-              >
-                <X aria-hidden className="size-3.5" /> {armAbort ? "Click again to forfeit" : "Abort"}
-              </button>
-            </div>
-          )}
+              </div>
+            )}
 
-          <AnimatePresence>
-            {phase === "done" && (
-              <ResultCard key="done">
-                <CheckCircle2 aria-hidden className="size-10 text-go-2" />
-                <p className="mt-3 text-2xl font-semibold tracking-tight">Load complete</p>
-                <p className="mt-1 text-muted">
-                  Your pets earned <span className="font-semibold text-go-2">{fmtMoney(earned)}</span>. It's waiting on their pads.
-                </p>
-                <p className="mt-1 text-sm text-muted">+1 wheel spin · opening the wheel in {countdown ?? 0}…</p>
-                <div className="mt-5 flex gap-2">
-                  <Button variant="play" onClick={() => { store.set({ pendingSpin: true }); close("/wheel") }}>
-                    <Disc3 aria-hidden className="size-4" /> Spin now
-                  </Button>
-                  <Button onClick={() => close()}>Stay here</Button>
-                </div>
-              </ResultCard>
-            )}
-            {phase === "forfeit" && (
-              <ResultCard key="forfeit">
-                <TriangleAlert aria-hidden className="size-10 text-danger" />
-                <p className="mt-3 text-2xl font-semibold tracking-tight">Session forfeited</p>
-                <p className="mt-1 text-muted">{reason} Your pets' earnings from this session were lost.</p>
-                <div className="mt-5">
-                  <Button onClick={() => close()}>Back</Button>
-                </div>
-              </ResultCard>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+            <AnimatePresence>
+              {phase === "done" && (
+                <ResultCard key="done">
+                  <CheckCircle2 aria-hidden className="size-10 text-go-2" />
+                  <p className="mt-3 text-2xl font-semibold tracking-tight">Load complete</p>
+                  <p className="mt-1 text-muted">
+                    Your pets earned <span className="font-semibold text-go-2">{fmtMoney(earned)}</span>. It’s waiting on their pads.
+                  </p>
+                  <p className="mt-1 text-sm text-muted">+1 wheel spin · opening the wheel in {countdown ?? 0}…</p>
+                  <div className="mt-5 flex gap-2">
+                    <Button autoFocus variant="play" onClick={() => { store.set({ pendingSpin: true }); close("/wheel") }}>
+                      <Disc3 aria-hidden className="size-4" /> Spin now
+                    </Button>
+                    <Button onClick={() => close()}>Stay here</Button>
+                  </div>
+                </ResultCard>
+              )}
+              {phase === "forfeit" && (
+                <ResultCard key="forfeit">
+                  <TriangleAlert aria-hidden className="size-10 text-danger" />
+                  <p className="mt-3 text-2xl font-semibold tracking-tight">Session forfeited</p>
+                  <p className="mt-1 text-muted">{reason} Your pets’ earnings from this session were lost.</p>
+                  <div className="mt-5">
+                    <Button autoFocus onClick={() => close()}>Back</Button>
+                  </div>
+                </ResultCard>
+              )}
+            </AnimatePresence>
+          </div>,
+          document.body,
+        )}
     </>
   )
 }
@@ -397,14 +428,14 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 function ResultCard({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: motionTokens.duration.normal }}
       className="absolute inset-0 grid place-items-center bg-bg/60 backdrop-blur-sm"
     >
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 16, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={springs.gentle}
@@ -412,7 +443,7 @@ function ResultCard({ children }: { children: React.ReactNode }) {
         role="status"
       >
         {children}
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   )
 }

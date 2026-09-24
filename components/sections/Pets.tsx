@@ -2,7 +2,8 @@
 
 import { memo, useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, useReducedMotion } from "motion/react"
+import * as m from "motion/react-m"
 import { ChevronsUp, Coins, Flame, HandCoins, Hourglass, Timer } from "lucide-react"
 import { FLAME_TIERS, PET_POOL, RARITIES, RARITY, flameTier } from "@/lib/data"
 import { fmtMoney, fmtShort } from "@/lib/format"
@@ -13,6 +14,7 @@ import { fx } from "@/lib/fx"
 import { Button } from "../Button"
 import { PageFrame } from "../PageFrame"
 import { PetAvatar } from "../PetAvatar"
+import { Tabs, tabPanel } from "../Tabs"
 
 type Pop = { id: number; amount: number }
 let popSeq = 0
@@ -43,20 +45,16 @@ export function Pets() {
       subtitle="Pets only earn while a session is running. When you finish, each pet's earnings land on its pad. Collect them here."
       actions={
         <>
-          <div role="tablist" aria-label="View" className="flex rounded-md bg-black/25 p-1">
-            {(["base", "book"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                onClick={() => setView(v)}
-                className={`h-8 cursor-pointer rounded px-3 text-sm font-semibold transition-colors duration-200 ${view === v ? "bg-panel-3 text-fg" : "text-muted hover:text-fg"}`}
-              >
-                {v === "base" ? "Base" : "Collection"}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            id="pets"
+            label="View"
+            value={view}
+            onChange={setView}
+            options={[
+              { id: "base", label: "Base" },
+              { id: "book", label: "Collection" },
+            ]}
+          />
           <Button variant="play" onClick={collectAll} disabled={waiting < 1}>
             <HandCoins aria-hidden className="size-4" /> Collect all · ${fmtShort(waiting)}
           </Button>
@@ -88,22 +86,24 @@ export function Pets() {
           />
         </div>
 
-        {view === "book" ? (
-          <Collection />
-        ) : (
-        <ul aria-label="Your pets" className="scroll-thin grid min-h-0 flex-1 auto-rows-max grid-cols-2 gap-3 overflow-y-auto pr-1 pb-1 md:grid-cols-3 xl:grid-cols-5">
-          {pets.map((p, i) => (
-            <PetPlot key={p.uid} pet={p} index={i} mult={mult} fresh={p.uid === lastPull} />
-          ))}
-          <li className="flex min-h-[270px] flex-col items-center justify-center rounded-lg border border-dashed border-line-2 p-4 text-center">
-            <p className="text-sm font-medium text-muted">Empty pad</p>
-            <p className="mt-1 text-xs text-faint">Finish a session, then spin to fill it.</p>
-            <Link href="/wheel" className="mt-3 text-sm font-semibold text-accent hover:underline">
-              Go to wheel →
-            </Link>
-          </li>
-        </ul>
-        )}
+        <div {...tabPanel("pets", view)} className="flex min-h-0 flex-1 flex-col">
+          {view === "book" ? (
+            <Collection />
+          ) : (
+          <ul aria-label="Your pets" className="scroll-thin grid min-h-0 flex-1 auto-rows-max grid-cols-2 gap-3 overflow-y-auto pr-1 pb-1 md:grid-cols-3 xl:grid-cols-5">
+            {pets.map((p, i) => (
+              <PetPlot key={p.uid} pet={p} index={i} mult={mult} fresh={p.uid === lastPull} />
+            ))}
+            <li className="flex min-h-[270px] flex-col items-center justify-center rounded-lg border border-dashed border-line-2 p-4 text-center">
+              <p className="text-sm font-medium text-muted">Empty pad</p>
+              <p className="mt-1 text-xs text-faint">Finish a session, then spin to fill it.</p>
+              <Link href="/wheel" className="mt-3 text-sm font-semibold text-accent hover:underline">
+                Go to wheel →
+              </Link>
+            </li>
+          </ul>
+          )}
+        </div>
       </div>
     </PageFrame>
   )
@@ -138,7 +138,7 @@ const PetPlot = memo(function PetPlot({ pet, index, mult, fresh }: { pet: OwnedP
   }
 
   return (
-    <motion.li
+    <m.li
       initial={{ opacity: 0, y: reduce ? 0 : motionTokens.distance.sm }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: motionTokens.duration.slow, ease: motionTokens.easing.smooth, delay: reduce ? 0 : Math.min(index, 10) * 0.03 }}
@@ -171,7 +171,7 @@ const PetPlot = memo(function PetPlot({ pet, index, mult, fresh }: { pet: OwnedP
         </div>
         <AnimatePresence>
           {pops.map((p) => (
-            <motion.span
+            <m.span
               key={p.id}
               aria-hidden
               className="pointer-events-none absolute top-0 z-20 text-xl font-bold text-go-2 drop-shadow-[0_2px_8px_rgb(0_0_0/0.6)]"
@@ -181,7 +181,7 @@ const PetPlot = memo(function PetPlot({ pet, index, mult, fresh }: { pet: OwnedP
               onAnimationComplete={() => setPops((list) => list.filter((x) => x.id !== p.id))}
             >
               +${fmtShort(p.amount)}
-            </motion.span>
+            </m.span>
           ))}
         </AnimatePresence>
       </div>
@@ -213,7 +213,7 @@ const PetPlot = memo(function PetPlot({ pet, index, mult, fresh }: { pet: OwnedP
           {maxed ? "Max" : `$${fmtShort(cost)}`}
         </button>
       </div>
-    </motion.li>
+    </m.li>
   )
 })
 

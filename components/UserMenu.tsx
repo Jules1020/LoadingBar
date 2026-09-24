@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { BarChart3, LogIn, LogOut, Map as MapIcon, Settings, ShieldCheck, UserRound } from "lucide-react"
 import { signOut } from "@/lib/account"
 import { effectiveProfile, useStore } from "@/lib/store"
@@ -56,7 +57,7 @@ export function UserMenu() {
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             role="menu"
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -88,7 +89,7 @@ export function UserMenu() {
             >
               <LogOut aria-hidden className="size-4" /> Sign out
             </button>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

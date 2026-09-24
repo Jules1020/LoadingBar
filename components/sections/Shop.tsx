@@ -24,6 +24,7 @@ import { Button } from "../Button"
 import { Chip, PageFrame } from "../PageFrame"
 import { SkinBar } from "../SkinBar"
 import { ScaledPreview } from "../ScaledPreview"
+import { Tabs, tabPanel } from "../Tabs"
 import { LoadingScreen } from "../screens"
 
 const KINDS: { id: CosmeticKind; label: string }[] = [
@@ -112,22 +113,11 @@ export function Shop() {
         <div className="panel flex flex-col p-4 lg:min-h-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-medium text-muted">Cosmetics</p>
-            <div role="tablist" className="flex rounded-md bg-black/25 p-1">
-              {KINDS.map((k) => (
-                <button
-                  key={k.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={kind === k.id}
-                  onClick={() => setKind(k.id)}
-                  className={`h-8 cursor-pointer rounded px-3 text-sm font-semibold transition-colors duration-200 ${kind === k.id ? "bg-panel-3 text-fg" : "text-muted hover:text-fg"}`}
-                >
-                  {k.label}
-                </button>
-              ))}
-            </div>
+            <Tabs id="shop" label="Cosmetic type" value={kind} onChange={setKind} options={KINDS} />
           </div>
-          <CosmeticShelf kind={kind} onBought={bought} onBroke={broke} />
+          <div {...tabPanel("shop", kind)} className="flex min-h-0 flex-1 flex-col">
+            <CosmeticShelf kind={kind} onBought={bought} onBroke={broke} />
+          </div>
         </div>
       </div>
     </PageFrame>

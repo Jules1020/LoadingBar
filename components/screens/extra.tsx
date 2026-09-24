@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react"
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react"
 import { BAR_STYLES } from "@/lib/cosmetics"
 import { fmtShort } from "@/lib/format"
@@ -72,11 +72,10 @@ function MusicControls({ preview, size = 7 }: { preview: boolean; size?: number 
 
 /** rAF loop for decorative motion; runs once for thumbnails or with reduced motion. */
 function useLoop(preview: boolean, step: (dt: number) => void) {
-  const ref = useRef(step)
-  ref.current = step
+  const tick = useEffectEvent(step)
   useEffect(() => {
     if (preview || reduceMotion()) {
-      ref.current(0)
+      tick(0)
       return
     }
     let raf = 0
@@ -84,7 +83,7 @@ function useLoop(preview: boolean, step: (dt: number) => void) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
-      ref.current(dt)
+      tick(dt)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -112,6 +111,8 @@ export function Download({ skin, line, preview, task }: ScreenProps) {
   const peakV = useRef(0)
   const color = (BAR_STYLES[skin] ?? BAR_STYLES["bar-classic"]).color
   const total = duration * 60 * BASE_GBPS
+  // Several previews can sit on one page, so SVG ids must be unique.
+  const fillId = `dl${useId().replace(/:/g, "")}`
 
   const draw = () => {
     const h = hist.current
@@ -163,12 +164,12 @@ export function Download({ skin, line, preview, task }: ScreenProps) {
             <line key={y} x1="0" x2="200" y1={y} y2={y} stroke="var(--color-line)" strokeWidth="0.3" vectorEffect="non-scaling-stroke" />
           ))}
           <defs>
-            <linearGradient id="dl-fill" x1="0" x2="0" y1="0" y2="1">
+            <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
               <stop offset="0" stopColor={color} stopOpacity="0.45" />
               <stop offset="1" stopColor={color} stopOpacity="0.02" />
             </linearGradient>
           </defs>
-          <path ref={area} fill="url(#dl-fill)" />
+          <path ref={area} fill={`url(#${fillId})`} />
           <path ref={stroke} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
         </svg>
         <div className="absolute top-[2cqh] left-[2cqh] flex gap-[4cqh] text-[2cqh] tracking-[0.15em] text-muted uppercase">
@@ -216,6 +217,9 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
   const earned = useRef<HTMLSpanElement>(null)
   const state = useRef({ p: preview?.p ?? 0, gbps: preview?.gbps ?? 0, a: 0, b: 0 })
   const accent = (BAR_STYLES[skin] ?? BAR_STYLES["bar-classic"]).color
+  const uid = useId().replace(/:/g, "")
+  const windowId = `cw${uid}`
+  const shellId = `cs${uid}`
 
   useScreenFrame(preview, (f) => {
     state.current.p = f.p
@@ -253,15 +257,15 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
     <div className="cq-size flex h-full w-full flex-col items-center justify-center gap-[3cqh]">
       <svg viewBox="0 0 320 200" className="h-[62cqh] drop-shadow-[0_2cqh_4cqh_rgb(0_0_0/0.6)]" aria-hidden>
         <defs>
-          <clipPath id="cs-window">
+          <clipPath id={windowId}>
             <rect x="86" y="70" width="148" height="44" rx="8" />
           </clipPath>
-          <linearGradient id="cs-shell" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id={shellId} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stopColor="#3a3d46" />
             <stop offset="1" stopColor="#22242a" />
           </linearGradient>
         </defs>
-        <rect x="2" y="2" width="316" height="196" rx="14" fill="url(#cs-shell)" stroke="#50535d" />
+        <rect x="2" y="2" width="316" height="196" rx="14" fill={`url(#${shellId})`} stroke="#50535d" />
         {[14, 306].map((x) => [14, 186].map((y) => <circle key={`${x}${y}`} cx={x} cy={y} r="3.5" fill="#15161a" stroke="#5c5f69" />))}
         {/* label */}
         <rect x="18" y="14" width="284" height="116" rx="6" fill="#f1e9d8" />
@@ -278,7 +282,7 @@ export function Cassette({ skin, line, preview, task }: ScreenProps) {
         </text>
         {/* window with the tape packs */}
         <rect x="86" y="70" width="148" height="44" rx="8" fill="#101114" />
-        <g clipPath="url(#cs-window)">
+        <g clipPath={`url(#${windowId})`}>
           <circle ref={leftPack} cx="118" cy="92" r={R_MAX} fill="#5b3a24" stroke="#7a5236" strokeWidth="0.6" />
           <circle ref={rightPack} cx="202" cy="92" r={R_MIN} fill="#5b3a24" stroke="#7a5236" strokeWidth="0.6" />
         </g>
@@ -319,7 +323,8 @@ export function Handheld({ line, preview, task }: ScreenProps) {
 
   useScreenFrame(preview, (f) => {
     const n = Math.floor(f.p * 12)
-    blocks.current?.querySelectorAll("i").forEach((el, i) => ((el as HTMLElement).style.opacity = i < n ? "1" : "0.18"))
+    const cells = blocks.current?.children
+    if (cells) for (let i = 0; i < cells.length; i++) (cells[i] as HTMLElement).style.opacity = i < n ? "1" : "0.18"
     setText(pct.current, `${Math.floor(f.p * 100)}%`)
     setText(money.current, `$${fmtShort(f.earned)}`)
     if (led.current) led.current.style.opacity = String(0.45 + Math.min(1, f.gbps / (BASE_GBPS * 2)) * 0.55)
@@ -418,7 +423,9 @@ export function Vinyl({ skin, line, preview, task }: ScreenProps) {
   const dec = useRef<HTMLSpanElement>(null)
   const gb = useRef<HTMLSpanElement>(null)
   const earned = useRef<HTMLSpanElement>(null)
-  const st = useRef({ angle: 0, arm: preview ? ARM_OUT + (ARM_IN - ARM_OUT) * preview.p : 70, target: ARM_OUT })
+  // Live sessions start with the arm parked and swing it in; thumbnails draw it in place.
+  const startArm = preview ? ARM_OUT + (ARM_IN - ARM_OUT) * preview.p : 70
+  const st = useRef({ angle: 0, arm: startArm, target: ARM_OUT })
   const drop = useCoverDrop(!!preview, track.id)
   const color = (BAR_STYLES[skin] ?? BAR_STYLES["bar-classic"]).color
 
@@ -462,7 +469,7 @@ export function Vinyl({ skin, line, preview, task }: ScreenProps) {
         </div>
         <svg viewBox="0 0 125 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
           <circle cx={PIVOT.x} cy={PIVOT.y} r="6" fill="#3a3a40" stroke="#5a5a62" strokeWidth="0.8" />
-          <g ref={arm} transform={`rotate(${st.current.arm} ${PIVOT.x} ${PIVOT.y})`}>
+          <g ref={arm} transform={`rotate(${startArm} ${PIVOT.x} ${PIVOT.y})`}>
             <line x1={PIVOT.x} y1={PIVOT.y} x2={PIVOT.x + ARM - 5} y2={PIVOT.y} stroke="#c9ccd4" strokeWidth="1.6" strokeLinecap="round" />
             <rect x={PIVOT.x + ARM - 6} y={PIVOT.y - 2.2} width="8" height="4.4" rx="1" fill="#e6e8ee" />
             <rect x={PIVOT.x - 9} y={PIVOT.y - 2.6} width="6" height="5.2" rx="1.2" fill="#6d6f78" />

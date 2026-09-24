@@ -1,6 +1,7 @@
 "use client"
 
-import { motion, type HTMLMotionProps } from "motion/react"
+import { type HTMLMotionProps } from "motion/react"
+import * as m from "motion/react-m"
 import { motionTokens, springs } from "@/lib/motion-tokens"
 
 type Variant = "play" | "primary" | "secondary" | "ghost" | "danger"
@@ -28,7 +29,7 @@ export function Button({
   ...props
 }: Omit<HTMLMotionProps<"button">, "children"> & { variant?: Variant; size?: Size; children?: React.ReactNode }) {
   return (
-    <motion.button
+    <m.button
       type="button"
       whileTap={{ scale: motionTokens.scale.press }}
       transition={springs.instant}
@@ -36,6 +37,6 @@ export function Button({
       {...props}
     >
       {children}
-    </motion.button>
+    </m.button>
   )
 }

@@ -86,6 +86,20 @@ openssl rand -hex 32                           # paste into AUTH_SECRET
 
 Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and password.
 
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on http://localhost:3000 |
+| `npm run build` / `npm start` | Production build and server |
+| `npm run check` | Typecheck, lint, unit tests and the contrast check, all at once |
+| `npm test` | Unit tests (Vitest) for the game logic |
+| `npm run contrast` | Checks every theme's text colours against WCAG AA |
+| `npm run measure` | Gzipped JS/CSS per page from a running server (default `localhost:3100`) |
+
+CI runs the same checks plus a production build on every push. The latest audit (performance, accessibility, SEO,
+code quality) is in [`docs/audit.md`](docs/audit.md).
+
 ## Keyboard
 
 | Key | Action |
@@ -100,7 +114,9 @@ Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and passw
 
 ## Under the hood
 
-- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript** · **Tailwind CSS 4** · **Motion** · **Lucide** icons.
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript 7** · **Tailwind CSS 4** · **Motion** · **Lucide** icons.
+- Accessible by default: every theme passes WCAG AA contrast, tabs and dialogs follow the WAI-ARIA patterns, and all
+  motion respects `prefers-reduced-motion`.
 - No images or audio files ship with it: pets are SVG built from parts, sounds and music are synthesized with the
   Web Audio API, and every animation is CSS or `requestAnimationFrame`.
 - The loading screens update the DOM directly at 60 fps from a small event emitter instead of re-rendering React.
@@ -111,9 +127,9 @@ Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and passw
 ```
 app/                 pages and API routes (auth, save, leaderboard, admin, inbox)
 components/          app shell, player, pets, wheel dial…
-components/sections/ one component per page
+components/sections/ one component per page (settings/ has one file per tab)
 components/screens/  the loading screens
-lib/                 game data, store, cosmetics, profiles, music, streak math
+lib/                 game data, store, cosmetics, profiles, music, streak and wheel math (+ *.test.ts)
 lib/server/          auth and file-based storage (server only)
 ```
 

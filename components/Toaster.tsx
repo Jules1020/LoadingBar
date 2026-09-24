@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { CheckCircle2, Info, Trophy, TriangleAlert, X } from "lucide-react"
 import { onToast, type Toast } from "@/lib/toast"
 import { springs } from "@/lib/motion-tokens"
@@ -29,7 +30,7 @@ export function Toaster() {
           const tone = t.tone ?? "info"
           const Icon = ICON[tone]
           return (
-            <motion.div
+            <m.div
               key={t.id}
               layout
               initial={{ opacity: 0, x: 40, scale: 0.96 }}
@@ -51,7 +52,7 @@ export function Toaster() {
               >
                 <X className="size-3.5" />
               </button>
-            </motion.div>
+            </m.div>
           )
         })}
       </AnimatePresence>

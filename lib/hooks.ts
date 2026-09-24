@@ -1,28 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useEffectEvent, useRef } from "react"
 
-/** Wall-clock ms, refreshed every `ms`. 0 on the server and first client render. */
-export function useNow(ms: number) {
-  const [now, setNow] = useState(0)
+/**
+ * Marks the element with `data-offscreen` while it's scrolled out of view, which pauses its
+ * CSS animations (see globals.css). `onChange` lets JS animation loops stop and restart too.
+ */
+export function useOffscreenPause<T extends Element>(onChange?: (visible: boolean) => void) {
+  const ref = useRef<T>(null)
+  const notify = useEffectEvent((visible: boolean) => onChange?.(visible))
   useEffect(() => {
-    setNow(Date.now())
-    const id = window.setInterval(() => setNow(Date.now()), ms)
-    return () => window.clearInterval(id)
-  }, [ms])
-  return now
-}
-
-export function useMediaQuery(query: string) {
-  const [match, setMatch] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const update = () => setMatch(mq.matches)
-    update()
-    mq.addEventListener("change", update)
-    return () => mq.removeEventListener("change", update)
-  }, [query])
-  return match
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === "undefined") return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        el.toggleAttribute("data-offscreen", !entry.isIntersecting)
+        notify(entry.isIntersecting)
+      },
+      { rootMargin: "120px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return ref
 }
 
 export function isEditable(target: EventTarget | null) {

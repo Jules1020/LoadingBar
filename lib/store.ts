@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore } from "react"
+import { useRef, useSyncExternalStore } from "react"
 import { FLAME_TIERS, PET_POOL, STARTER_PETS, flameTier, type PetDef, type WheelKind } from "./data"
 import { COSMETICS, COSMETIC_PRICE, DEFAULT_EQUIPPED, isUnlocked, type CosmeticKind, type Equipped } from "./cosmetics"
 import { computeStreak, type DayLog } from "./streak"
@@ -136,8 +136,28 @@ export function useStore<T>(selector: (s: State) => T): T {
   )
 }
 
+const shallowEqual = (a: object, b: object) => {
+  const ka = Object.keys(a)
+  return ka.length === Object.keys(b).length && ka.every((k) => Object.is((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+}
+
+/**
+ * Like useStore, for selectors that build an object from several fields:
+ * re-renders only when one of those fields changes.
+ */
+export function useStoreShallow<T extends object>(selector: (s: State) => T): T {
+  const client = useRef<T | null>(null)
+  const server = useRef<T | null>(null)
+  const cached = (ref: { current: T | null }, next: T) => (ref.current && shallowEqual(ref.current, next) ? ref.current : (ref.current = next))
+  return useSyncExternalStore(
+    store.subscribe,
+    () => cached(client, selector(state)),
+    () => cached(server, selector(initialState)),
+  )
+}
+
 // ---------- derived ----------
-export const isAdmin = (s: State) => !!s.user?.admin
+export const isAdmin = (s: Pick<State, "user">) => !!s.user?.admin
 export const streakOf = (s: State) => computeStreak(s.history, s.frozenDays, s.targetDays, s.today)
 export const MAX_PET_LEVEL = 10
 /** A pet's $/s before the flame multiplier: +20% per level above 1. */
@@ -149,11 +169,14 @@ export const totalRate = (s: State) => baseRate(s) * multiplier(s)
 export const waitingOnPads = (s: State) => s.pets.reduce((sum, p) => sum + p.stash, 0)
 export const sessionsToday = (s: State) => s.history[s.today]?.sessions ?? 0
 export const effectiveSpeed = (s: State): SessionSpeed => (isAdmin(s) ? s.sessionSpeed : 1)
-export const unlockCtx = (s: State) => ({
-  unlockAll: isAdmin(s) && s.unlockAll,
-  ownedCosmetics: s.ownedCosmetics,
-  bestStreak: streakOf(s).best,
-})
+type UnlockCtx = { unlockAll: boolean; ownedCosmetics: string[]; bestStreak: number }
+let ctxCache: UnlockCtx | null = null
+/** Cached, so it's safe to pass straight to useStore. */
+export function unlockCtx(s: State): UnlockCtx {
+  const next = { unlockAll: isAdmin(s) && s.unlockAll, ownedCosmetics: s.ownedCosmetics, bestStreak: streakOf(s).best }
+  if (ctxCache && shallowEqual(ctxCache, next)) return ctxCache
+  return (ctxCache = next)
+}
 
 let eqCache: { eq: Equipped; key: string; value: Equipped } | null = null
 /** Equipped items, falling back to defaults for anything no longer unlocked (e.g. after an admin signs out). */
@@ -352,7 +375,7 @@ export function maxAllPets() {
 }
 
 // ---------- profile ----------
-export const ownsProfileItem = (s: State, id: string) =>
+export const ownsProfileItem = (s: Pick<State, "ownedProfile" | "user" | "unlockAll">, id: string) =>
   !!PROFILE_ITEMS.find((i) => i.id === id)?.free || s.ownedProfile.includes(id) || (isAdmin(s) && s.unlockAll)
 
 export function setProfile(patch: Partial<Profile>) {
@@ -378,7 +401,11 @@ export function buyProfileItem(id: string) {
   return true
 }
 
-/** The profile as others see it: equipped items fall back when not owned (e.g. after an admin signs out). */
+let profileCache: { source: Profile; key: string; value: Profile } | null = null
+/**
+ * The profile as others see it: equipped items fall back when not owned (e.g. after an admin signs out).
+ * Cached, so it's safe to pass straight to useStore.
+ */
 export function effectiveProfile(s: State): Profile {
   const p = s.profile
   const own = (id: string, fallback: string) => (ownsProfileItem(s, id) ? id : fallback)
@@ -386,7 +413,11 @@ export function effectiveProfile(s: State): Profile {
   const frame = own(p.frame, "pframe-none")
   const nameStyle = own(p.nameStyle, "pname-plain")
   if (background === p.background && frame === p.frame && nameStyle === p.nameStyle) return p
-  return { ...p, background, frame, nameStyle }
+  const key = `${background}|${frame}|${nameStyle}`
+  if (profileCache && profileCache.source === p && profileCache.key === key) return profileCache.value
+  const value = { ...p, background, frame, nameStyle }
+  profileCache = { source: p, key, value }
+  return value
 }
 
 // ---------- more admin tools ----------

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useOffscreenPause } from "@/lib/hooks"
 import { RARITY } from "@/lib/data"
 import { fmtShort } from "@/lib/format"
 import { BASE_GBPS } from "@/lib/progress"
@@ -47,6 +48,9 @@ export function SpinDial({
   // Where a slot slips out of view and can be rewritten unseen.
   const entry = tr ? 60 : 30
 
+  // Thumbnails scrolled out of view stop their loop entirely.
+  const [visible, setVisible] = useState(true)
+  const rootRef = useOffscreenPause<HTMLDivElement>(setVisible)
   const ticksRef = useRef<SVGGElement>(null)
   const labelRefs = useRef<(SVGTextElement | null)[]>([])
   const angle = useRef(0)
@@ -101,6 +105,7 @@ export function SpinDial({
   }, [live])
 
   useEffect(() => {
+    if (!visible) return
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     let raf = 0
     let last = performance.now()
@@ -145,13 +150,14 @@ export function SpinDial({
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [mode, live, cx, cy, pointer, entry])
+  }, [mode, live, cx, cy, pointer, entry, visible])
 
   const at = (deg: number, r: number) =>
     `${round(cx + r * Math.cos((deg * Math.PI) / 180))} ${round(cy + r * Math.sin((deg * Math.PI) / 180))}`
 
   return (
     <div
+      ref={rootRef}
       aria-hidden
       className={`pointer-events-none absolute aspect-square ${tr ? "top-0 right-0" : "bottom-0 left-0"} ${className}`}
     >

@@ -7,6 +7,8 @@ import { MiniPlayer } from "@/components/MiniPlayer"
 import { Toaster } from "@/components/Toaster"
 import { ShortcutsHelp } from "@/components/ShortcutsHelp"
 import { Announcement } from "@/components/Announcement"
+import { MotionProvider } from "@/components/MotionProvider"
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site"
 import "./globals.css"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" })
@@ -20,9 +22,14 @@ const orbitron = Orbitron({ subsets: ["latin"], variable: "--font-orbitron", dis
 const fontVars = [geist, geistMono, vt323, press, fraunces, grotesk, orbitron].map((f) => f.variable).join(" ")
 
 export const metadata: Metadata = {
-  title: { default: "<LoadingBar> · your focus session is loading", template: "%s · <LoadingBar>" },
-  description:
-    "A focus timer disguised as a game loading screen. Fill the bar, spin the wheel, let your pets earn, keep your streak alive.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} · your focus session is loading`, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ["focus timer", "pomodoro", "study timer", "gamified productivity", "loading screen", "streak"],
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: SITE_NAME, title: `${SITE_NAME} · your focus session is loading`, description: SITE_DESCRIPTION, url: "/" },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME} · your focus session is loading`, description: SITE_DESCRIPTION },
 }
 
 export const viewport: Viewport = {
@@ -39,27 +46,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
       <body>
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-16 focus:left-3 focus:z-[80] focus:rounded-md focus:bg-accent focus:px-3 focus:py-1.5 focus:text-bg"
-        >
-          Skip to content
-        </a>
-        {/* Fixed-height app shell: views are laid out to fit the window. The content area only
-            scrolls as a fallback when a window is too small to fit a view. */}
-        {/* The tab bar sits on top by default; layout themes move it (side:, side-r:, dock: variants). */}
-        <div className="app-bg flex h-dvh flex-col side:flex-row side-r:flex-row-reverse dock:flex-col-reverse">
-          <StatusBar />
-          <Engine />
-          <main id="main" className="scroll-thin relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-            <Announcement />
-            <div className="min-h-0 flex-1">{children}</div>
-          </main>
-        </div>
-        <MiniPlayer />
-        <Toaster />
-        <ShortcutsHelp />
-        <FxLayer />
+        <MotionProvider>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-16 focus:left-3 focus:z-[80] focus:rounded-md focus:bg-accent focus:px-3 focus:py-1.5 focus:text-bg"
+          >
+            Skip to content
+          </a>
+          {/* Fixed-height app shell: views are laid out to fit the window. The content area only
+              scrolls as a fallback when a window is too small to fit a view. */}
+          {/* The tab bar sits on top by default; layout themes move it (side:, side-r:, dock: variants). */}
+          <div id="app-shell" className="app-bg flex h-dvh flex-col side:flex-row side-r:flex-row-reverse dock:flex-col-reverse">
+            <StatusBar />
+            <Engine />
+            <main id="main" className="scroll-thin relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+              <Announcement />
+              <div className="min-h-0 flex-1">{children}</div>
+            </main>
+          </div>
+          <MiniPlayer />
+          <Toaster />
+          <ShortcutsHelp />
+          <FxLayer />
+        </MotionProvider>
       </body>
     </html>
   )

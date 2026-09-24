@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation"
+import { permanentRedirect } from "next/navigation"
 
+// Merged into /progress; permanent so search engines move the old URL over.
 export default function Page() {
-  redirect("/progress?tab=streak")
+  permanentRedirect("/progress?tab=streak")
 }

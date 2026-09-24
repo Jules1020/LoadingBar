@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { Award, Check, Coins, Flame, ImagePlus, Lock, PawPrint, Sparkles, Timer, Trash2, Type as TypeIcon, UserRound, Wand2 } from "lucide-react"
 import { ACHIEVEMENTS } from "@/lib/achievements"
 import { PET_POOL, RARITY } from "@/lib/data"
@@ -17,10 +18,23 @@ import {
   type ProfileItem,
   type ProfileKind,
 } from "@/lib/profile"
-import { buyProfileItem, effectiveProfile, equipProfileItem, ownsProfileItem, petRate, setProfile, store, streakOf, useStore, type OwnedPet } from "@/lib/store"
+import {
+  buyProfileItem,
+  effectiveProfile,
+  equipProfileItem,
+  ownsProfileItem,
+  petRate,
+  setProfile,
+  store,
+  streakOf,
+  useStore,
+  useStoreShallow,
+  type OwnedPet,
+} from "@/lib/store"
 import { sfx } from "@/lib/audio"
 import { fx } from "@/lib/fx"
 import { toast } from "@/lib/toast"
+import { useOffscreenPause } from "@/lib/hooks"
 import { Chip, PageFrame } from "../PageFrame"
 import { PetAvatar } from "../PetAvatar"
 import { ProfileAvatar } from "../ProfileAvatar"
@@ -67,7 +81,7 @@ export function Profile() {
           </nav>
           <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-4">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div
+              <m.div
                 key={tab}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -77,7 +91,7 @@ export function Profile() {
                 {tab === "edit" && <EditTab />}
                 {(tab === "background" || tab === "frame" || tab === "name") && <ItemShop kind={tab} />}
                 {tab === "showcase" && <ShowcaseTab />}
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           </div>
         </div>
@@ -88,13 +102,13 @@ export function Profile() {
 
 // ---------- the card everyone sees ----------
 function ProfileCard() {
-  const s = useStore((st) => st)
-  const p = effectiveProfile(s)
+  const p = useStore(effectiveProfile)
+  const streak = useStore(streakOf)
+  const s = useStoreShallow((st) => ({ user: st.user, history: st.history, achievements: st.achievements, pets: st.pets, sessionRunning: st.sessionRunning }))
   const name = p.name || s.user?.email.split("@")[0] || "Guest"
   const minutes = Object.values(s.history).reduce((n, d) => n + d.minutes, 0)
   const sessions = Object.values(s.history).reduce((n, d) => n + d.sessions, 0)
   const lv = profileLevel(minutes, s.achievements.length)
-  const streak = streakOf(s)
   const dex = new Set(s.pets.map((x) => x.name)).size
   const showcase = p.showcase.map((uid) => s.pets.find((x) => x.uid === uid)).filter((x): x is OwnedPet => !!x)
   const shown = showcase.length ? showcase : [...s.pets].sort((a, b) => petRate(b) - petRate(a)).slice(0, 3)
@@ -387,8 +401,8 @@ function AvatarChoice({ on, onClick, label, children }: { on: boolean; onClick?:
 
 // ---------- shop grids for backgrounds, frames and name styles ----------
 function ItemShop({ kind }: { kind: ProfileKind }) {
-  const s = useStore((st) => st)
-  const p = effectiveProfile(s)
+  const p = useStore(effectiveProfile)
+  const s = useStoreShallow((st) => ({ balance: st.balance, ownedProfile: st.ownedProfile, user: st.user, unlockAll: st.unlockAll }))
   const items = PROFILE_ITEMS.filter((i) => i.kind === kind)
   const field = kind === "background" ? p.background : kind === "frame" ? p.frame : p.nameStyle
   const owned = items.filter((i) => ownsProfileItem(s, i.id)).length
@@ -466,17 +480,18 @@ function ItemShop({ kind }: { kind: ProfileKind }) {
 }
 
 function ItemPreview({ item, profile }: { item: ProfileItem; profile: ProfileT }) {
+  const ref = useOffscreenPause<HTMLDivElement>()
   const vars = { "--c1": profile.colors[0], "--c2": profile.colors[1] } as React.CSSProperties
-  if (item.kind === "background") return <div className={`${item.id} h-20`} style={vars} />
+  if (item.kind === "background") return <div ref={ref} className={`${item.id} h-20`} style={vars} />
   if (item.kind === "frame") {
     return (
-      <div className="grid h-20 place-items-center bg-black/25">
+      <div ref={ref} className="grid h-20 place-items-center bg-black/25">
         <ProfileAvatar profile={{ ...profile, frame: item.id }} fallback={profile.name || "A"} size={48} />
       </div>
     )
   }
   return (
-    <div className="grid h-20 place-items-center bg-black/25 px-2" style={vars}>
+    <div ref={ref} className="grid h-20 place-items-center bg-black/25 px-2" style={vars}>
       <span className={`display max-w-full truncate text-xl font-bold ${item.id}`}>{profile.name || "Your name"}</span>
     </div>
   )

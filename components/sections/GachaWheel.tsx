@@ -1,12 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react"
+import { AnimatePresence, useInView, useReducedMotion } from "motion/react"
+import * as m from "motion/react-m"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Copy, Lock, Play, Snowflake, SwatchBook, Ticket } from "lucide-react"
-import { ODDS, PET_POOL, RARITY, WHEEL, type Avatar, type Rarity, type WheelKind } from "@/lib/data"
-import { COSMETICS, THEME_SWATCH, type Cosmetic } from "@/lib/cosmetics"
+import { ODDS, PET_POOL, RARITY, WHEEL, type Avatar, type WheelKind } from "@/lib/data"
+import { THEME_SWATCH, type Cosmetic } from "@/lib/cosmetics"
+import { SEG, landing, rollCosmetic, rollKind, segAt } from "@/lib/wheel"
 import { fmtMoney, fmtShort } from "@/lib/format"
 import { demoTimings, motionTokens, springs } from "@/lib/motion-tokens"
 import { addPet, effectiveEquipped, equip, grantCosmetic, isAdmin, multiplier, recordPull, store, useStore } from "@/lib/store"
@@ -17,7 +19,6 @@ import { Chip, PageFrame } from "../PageFrame"
 import { PetAvatar } from "../PetAvatar"
 import { SkinBar } from "../SkinBar"
 
-const SEG = 360 / WHEEL.length
 const R = 170
 const LABEL: Record<WheelKind, string> = {
   common: "COMMON",
@@ -30,7 +31,6 @@ const LABEL: Record<WheelKind, string> = {
   freeze: "FREEZE",
   cosmetic: "SKIN",
 }
-const COS_WEIGHT: Record<Rarity, number> = { common: 40, uncommon: 25, rare: 15, epic: 10, legendary: 6, mythic: 3, secret: 1 }
 const DUPE_CASH = 5_000
 
 type Pull = {
@@ -51,26 +51,9 @@ const polar = (deg: number, r: number) => {
   const a = (deg * Math.PI) / 180
   return [round(Math.cos(a) * r), round(Math.sin(a) * r)]
 }
-const segAt = (rot: number) => Math.floor(((((-rot % 360) + 360) % 360) / SEG) % WHEEL.length)
 const smoothstep = (a: number, b: number, t: number) => {
   const x = Math.min(1, Math.max(0, (t - a) / (b - a)))
   return x * x * (3 - 2 * x)
-}
-
-function rollKind(): WheelKind {
-  let r = Math.random()
-  for (const [kind, p] of Object.entries(ODDS) as [WheelKind, number][]) {
-    if ((r -= p) <= 0) return kind
-  }
-  return "common"
-}
-
-function rollCosmetic(owned: string[]) {
-  const pool = COSMETICS.filter((c) => c.source.type === "wheel" && !owned.includes(c.id))
-  if (!pool.length) return null
-  let r = Math.random() * pool.reduce((s, c) => s + COS_WEIGHT[c.rarity], 0)
-  for (const c of pool) if ((r -= COS_WEIGHT[c.rarity]) <= 0) return c
-  return pool[0]
 }
 
 const BIG: WheelKind[] = ["epic", "legendary", "mythic", "secret"]
@@ -214,12 +197,8 @@ export function GachaWheel() {
 
     // Admin can rig the wheel to land on one result every time.
     const kind = (isAdmin(s0) && s0.rig) || rollKind()
-    const candidates = WHEEL.flatMap((k, i) => (k === kind ? [i] : []))
-    const target = candidates[Math.floor(Math.random() * candidates.length)]
     const start = rotRef.current
-    const jitter = (Math.random() - 0.5) * SEG * 0.6
-    const want = -(target * SEG + SEG / 2) + jitter
-    const delta = (((want - start) % 360) + 360) % 360
+    const { delta } = landing(kind, start)
     const big = BIG.includes(kind)
     const turns = reduce ? 1 : big ? 7 : 5
     const end = start + turns * 360 + delta
@@ -444,7 +423,7 @@ export function GachaWheel() {
             )}
             <AnimatePresence mode="wait">
               {spinning && (
-                <motion.div
+                <m.div
                   key="spinning"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -454,10 +433,10 @@ export function GachaWheel() {
                 >
                   <p className="text-xs font-medium text-muted">Rolling</p>
                   <p className="shimmer-text mt-1 text-3xl font-semibold">Good luck…</p>
-                </motion.div>
+                </m.div>
               )}
               {!spinning && result && (
-                <motion.div
+                <m.div
                   key={result.n}
                   initial={{ opacity: 0, y: 10, scale: reduce ? 1 : 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -512,10 +491,10 @@ export function GachaWheel() {
                       <Copy aria-hidden className="size-4" /> {copied ? "Copied" : "Copy brag"}
                     </Button>
                   </div>
-                </motion.div>
+                </m.div>
               )}
               {!spinning && !result && (
-                <motion.div key="idle" initial={false} className="flex h-full flex-col">
+                <m.div key="idle" initial={false} className="flex h-full flex-col">
                   {locked ? (
                     <>
                       <p className="flex items-center gap-2 text-xs font-medium text-muted">
@@ -546,7 +525,7 @@ export function GachaWheel() {
                       </div>
                     </>
                   )}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

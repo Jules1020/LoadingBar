@@ -3,7 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { Cloud, KeyRound, LogOut, Mail, ShieldCheck, Trophy } from "lucide-react"
 import { authenticate, signOut } from "@/lib/account"
 import { useStore } from "@/lib/store"
@@ -80,18 +81,17 @@ export function Login() {
             </div>
           ) : (
             <form onSubmit={submit} noValidate>
-              <div role="tablist" aria-label="Account" className="mb-6 grid grid-cols-2 gap-1 rounded-md bg-black/25 p-1">
+              <div role="group" aria-label="Account" className="mb-6 grid grid-cols-2 gap-1 rounded-md bg-black/25 p-1">
                 {(["login", "signup"] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
-                    role="tab"
-                    aria-selected={mode === m}
+                    aria-pressed={mode === m}
                     onClick={() => {
                       setMode(m)
                       setError(null)
                     }}
-                    className={`h-9 cursor-pointer rounded text-sm font-semibold transition-colors duration-200 ${mode === m ? "bg-panel-3 text-fg" : "text-muted hover:text-fg"}`}
+                    className={`h-9 cursor-pointer rounded text-sm font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-accent ${mode === m ? "bg-panel-3 text-fg" : "text-muted hover:text-fg"}`}
                   >
                     {m === "login" ? "Sign in" : "Create account"}
                   </button>
@@ -132,7 +132,7 @@ export function Login() {
               </div>
               <AnimatePresence>
                 {error && (
-                  <motion.p
+                  <m.p
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
@@ -141,7 +141,7 @@ export function Login() {
                     className="mt-3 text-sm text-danger"
                   >
                     {error}
-                  </motion.p>
+                  </m.p>
                 )}
               </AnimatePresence>
               <Button type="submit" variant="primary" size="lg" disabled={busy || !email || !password} className="mt-6 w-full">

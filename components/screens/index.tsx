@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence } from "motion/react"
+import * as m from "motion/react-m"
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react"
 import { BAR_STYLES } from "@/lib/cosmetics"
 import { RARITY, type Avatar } from "@/lib/data"
 import { fmtShort } from "@/lib/format"
 import { motionTokens } from "@/lib/motion-tokens"
-import { fmtPct, useFrame, usePayouts, type Frame, type Payout } from "@/lib/session"
+import { fmtPct, usePayouts, type Frame, type Payout } from "@/lib/session"
 import { useStore } from "@/lib/store"
 import { music, useMusic } from "@/lib/music"
 import { SpinningCD } from "../MiniPlayer"
@@ -239,7 +240,7 @@ function Boss({ skin, line, preview }: ScreenProps) {
         </div>
         <AnimatePresence>
           {hits.map((h) => (
-            <motion.span
+            <m.span
               key={h.id}
               initial={{ opacity: 0, y: 0, scale: 0.8 }}
               animate={{ opacity: [0, 1, 1, 0], y: -110, scale: 1.1 }}
@@ -249,7 +250,7 @@ function Boss({ skin, line, preview }: ScreenProps) {
               style={{ left: `${30 + ((h.id * 17) % 40)}%`, color: RARITY[h.rarity].hex }}
             >
               -{fmtShort(h.amount)}
-            </motion.span>
+            </m.span>
           ))}
         </AnimatePresence>
       </div>

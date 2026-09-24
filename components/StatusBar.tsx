@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -49,22 +49,21 @@ type FsElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }
  * Fullscreen on the document root. Navigation is client-side (next/link, router.push),
  * so the document never unloads and fullscreen survives page changes.
  */
-function useFullscreen() {
-  const [active, setActive] = useState(false)
-  const [supported, setSupported] = useState(false)
+function subscribeFullscreen(onChange: () => void) {
+  document.addEventListener("fullscreenchange", onChange)
+  document.addEventListener("webkitfullscreenchange", onChange)
+  return () => {
+    document.removeEventListener("fullscreenchange", onChange)
+    document.removeEventListener("webkitfullscreenchange", onChange)
+  }
+}
+const noSubscribe = () => () => {}
 
-  useEffect(() => {
-    const d = document as FsDocument
-    setSupported(!!(document.fullscreenEnabled || d.webkitFullscreenEnabled))
-    const sync = () => setActive(!!(document.fullscreenElement || d.webkitFullscreenElement))
-    sync()
-    document.addEventListener("fullscreenchange", sync)
-    document.addEventListener("webkitfullscreenchange", sync)
-    return () => {
-      document.removeEventListener("fullscreenchange", sync)
-      document.removeEventListener("webkitfullscreenchange", sync)
-    }
-  }, [])
+function useFullscreen() {
+  const d = typeof document === "undefined" ? null : (document as FsDocument)
+  // The server can't know, so it renders "not supported / not active" and the client corrects it.
+  const active = useSyncExternalStore(subscribeFullscreen, () => !!(d?.fullscreenElement || d?.webkitFullscreenElement), () => false)
+  const supported = useSyncExternalStore(noSubscribe, () => !!(d?.fullscreenEnabled || d?.webkitFullscreenEnabled), () => false)
 
   const toggle = useCallback(async () => {
     const d = document as FsDocument
