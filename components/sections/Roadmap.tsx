@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useInView, useReducedMotion } from "motion/react"
-import { Layers, Music2, Palette, Sparkles, type LucideIcon } from "lucide-react"
+import { Gamepad2, Layers, Music2, Palette, Server, Smartphone, Sparkles, Timer, Users, type LucideIcon } from "lucide-react"
 import { LOADING_LINES, RARITY } from "@/lib/data"
+import { FUTURE, ROADMAP_AREAS, ROADMAP_STATUS, type RoadmapArea, type RoadmapStatus } from "@/lib/roadmap"
 import { PageFrame } from "../PageFrame"
 
 /** Slow clock for the previews; stops when off-screen or reduced-motion. */
@@ -112,37 +113,90 @@ const ITEMS: { title: string; desc: string; icon: LucideIcon; Preview: () => Rea
     icon: Layers,
     Preview: StagesPreview,
   },
-  { title: "Skin workshop", desc: "Design your own bar skins and share them. Twelve built-in skins ship today.", icon: Palette, Preview: SkinsPreview },
-  { title: "Spotify sync", desc: "The mini player works today with built-in stations and your own files. Next: your Spotify account.", icon: Music2, Preview: VinylPreview },
-  { title: "Pet evolutions", desc: "Pets level up the longer they grind, up to a new Mythic+ tier.", icon: Sparkles, Preview: TiersPreview },
+  { title: "Skin workshop", desc: "Design your own bar skins and themes, and share them. Twelve skins ship today.", icon: Palette, Preview: SkinsPreview },
+  { title: "Spotify sync", desc: "The player already takes your own files and cover art. Next: your Spotify account.", icon: Music2, Preview: VinylPreview },
+  { title: "Pet evolutions", desc: "Pets already upgrade to level 10. Next they evolve into new forms, up to a Mythic+ tier.", icon: Sparkles, Preview: TiersPreview },
 ]
+
+const AREA_ICON: Record<RoadmapArea, LucideIcon> = { focus: Timer, social: Users, game: Gamepad2, apps: Smartphone, platform: Server }
+const STATUS_STYLE: Record<RoadmapStatus, string> = {
+  next: "border-accent/50 bg-accent/15 text-accent",
+  planned: "border-go/40 bg-go/10 text-go-2",
+  exploring: "border-line-2 text-muted",
+}
+
+function StatusBadge({ status }: { status: RoadmapStatus }) {
+  return (
+    <span title={ROADMAP_STATUS[status].hint} className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide whitespace-nowrap ${STATUS_STYLE[status]}`}>
+      {ROADMAP_STATUS[status].label}
+    </span>
+  )
+}
 
 export function Roadmap() {
   return (
-    <PageFrame
-      eyebrow="Roadmap"
-      title="Coming soon"
-      subtitle="What's next once the core loop is proven."
-    >
-      <ul className="grid h-full auto-rows-fr gap-4 sm:grid-cols-2">
-        {ITEMS.map(({ title, desc, icon: Icon, Preview }) => (
-          <li key={title} className="panel flex min-h-[180px] flex-col p-5">
-            <div className="flex items-start justify-between gap-3">
-              <span className="grid size-10 place-items-center rounded-md bg-accent/15 text-accent">
-                <Icon aria-hidden className="size-5" />
-              </span>
-              <span className="rounded-md border border-line-2 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-muted">
-                Coming soon
-              </span>
-            </div>
-            <p className="mt-4 text-lg font-semibold tracking-tight">{title}</p>
-            <p className="mt-1 text-sm text-muted">{desc}</p>
-            <div className="mt-auto pt-5">
-              <Preview />
-            </div>
-          </li>
-        ))}
-      </ul>
+    <PageFrame eyebrow="Roadmap" title="What's next" subtitle="Features on the way, and where the app goes after that.">
+      <div className="flex flex-col gap-4 lg:h-full">
+        <section aria-labelledby="soon-title" className="shrink-0">
+          <h2 id="soon-title" className="mb-2 text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+            Coming soon
+          </h2>
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {ITEMS.map(({ title, desc, icon: Icon, Preview }) => (
+              <li key={title} className="panel flex flex-col p-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-accent/15 text-accent">
+                    <Icon aria-hidden className="size-[18px]" />
+                  </span>
+                  <p className="font-semibold tracking-tight">{title}</p>
+                </div>
+                <p className="mt-2 text-sm text-muted">{desc}</p>
+                <div className="mt-auto pt-4">
+                  <Preview />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="future-title" className="panel flex flex-col lg:min-h-0 lg:flex-1">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+            <h2 id="future-title" className="display font-semibold">
+              Future development
+            </h2>
+            <ul aria-label="Status legend" className="flex flex-wrap gap-3 text-xs text-muted">
+              {(Object.keys(ROADMAP_STATUS) as RoadmapStatus[]).map((s) => (
+                <li key={s} className="flex items-center gap-1.5">
+                  <StatusBadge status={s} /> {ROADMAP_STATUS[s].hint}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="scroll-thin grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {ROADMAP_AREAS.map(({ id, label }) => {
+              const Icon = AREA_ICON[id]
+              return (
+                <section key={id} aria-labelledby={`area-${id}`}>
+                  <h3 id={`area-${id}`} className="flex items-center gap-2 text-sm font-semibold">
+                    <Icon aria-hidden className="size-4 text-accent" /> {label}
+                  </h3>
+                  <ul className="mt-2 space-y-2">
+                    {FUTURE.filter((f) => f.area === id).map((f) => (
+                      <li key={f.title} className="rounded-md border border-line bg-white/[0.02] p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold">{f.title}</p>
+                          <StatusBadge status={f.status} />
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-muted">{f.desc}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
+          </div>
+        </section>
+      </div>
     </PageFrame>
   )
 }
