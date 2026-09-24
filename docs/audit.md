@@ -66,7 +66,7 @@ About 175 kB of what remains is React and Next.js itself.
 | Check | Before | After |
 |---|---|---|
 | ESLint (Next.js core-web-vitals + TypeScript rules) | not set up | 0 errors, 0 warnings |
-| Unit tests | none | 33 (Vitest): progress curve, streak rules, save validation, shop, profiles, wheel odds |
+| Tests | none | 85 (Vitest): progress curve, streak rules, save validation, shop, profiles, wheel odds, and the auth, save, admin and inbox API routes |
 | TypeScript | strict | strict + no unused locals/parameters |
 | CI | none | GitHub Actions: typecheck, lint, tests, contrast, build |
 | Largest component | `Settings.tsx`, 934 lines | 85 lines; one file per tab in `components/sections/settings/` |
@@ -83,6 +83,25 @@ Bugs fixed along the way:
 TypeScript 7 has no JS API yet, so tools that need one (typescript-eslint, Next's type check) get the TypeScript 6
 API through `typescript` → `@typescript/typescript6`, while `tsc` is TypeScript 7 (`@typescript/native`). That is the
 side-by-side setup from the TypeScript 7 release notes.
+
+## Test-driven follow-up
+
+The server and economy code was then covered test-first: each rule was written as a failing test, then made to pass.
+That turned up six real bugs:
+
+- **Login lockout for regular use:** every login, including successful ones, counted toward the 8-per-10-minutes
+  limit. Now only failures count, per IP and per account, and a success clears the account's count.
+- **Crash without `AUTH_SECRET`:** an old cookie made every signed-in request throw, and sign-up created an account
+  and then crashed before signing in. Now tokens fail closed and sign-up/sign-in return 503 before touching data.
+- **Lost or crashing writes:** two writes in the same millisecond shared a temp file name and crashed; concurrent
+  sign-ups or gifts (a double-click) could overwrite each other. Writes to the same file now queue, with unique
+  temp names.
+- **Save size limit in characters, not bytes:** multi-byte text could exceed the 512 KB cap. Now measured in bytes.
+- **One corrupt save broke the podium and the admin account list for everyone.** Unreadable saves are now skipped.
+- **Freezes accepted any date:** a token could be spent on today, the future, a day already played or an earlier
+  week. The store now enforces the same "missed day this week" rule the Streak page shows.
+
+Route tests run against a temporary folder via `LOADINGBAR_DATA_DIR`, never the real `.data/`.
 
 ## Not done
 

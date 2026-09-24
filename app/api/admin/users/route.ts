@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { currentUser, isAdmin, normalizeEmail } from "@/lib/server/auth"
-import { deleteUser, listUsers, readSave } from "@/lib/server/db"
+import { deleteUser, listUsers, readSaveJson } from "@/lib/server/db"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -14,8 +14,7 @@ export async function GET() {
   const users = await listUsers()
   const rows = await Promise.all(
     users.map(async (u) => {
-      const raw = await readSave(u.email)
-      const s: SaveLike = raw ? JSON.parse(raw) : {}
+      const s: SaveLike = (await readSaveJson(u.email)) ?? {}
       return {
         email: u.email,
         createdAt: u.createdAt,

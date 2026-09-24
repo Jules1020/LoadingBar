@@ -255,10 +255,14 @@ export function recordPull(kind: WheelKind) {
   store.set((s) => ({ pulls: { ...s.pulls, [kind]: (s.pulls[kind] ?? 0) + 1 } }))
 }
 
-/** Spends a freeze on a missed day of the current week. */
+/**
+ * Spends a freeze on a missed day of the current week: an earlier day with no session.
+ * Uses the streak's own day statuses, so it matches what the Streak page offers.
+ */
 export function freezeDay(key: string) {
   const s = store.get()
-  if (s.freezeTokens <= 0 || s.frozenDays.includes(key)) return false
+  const missed = streakOf(s).days.some((d) => d.key === key && d.status === "missed")
+  if (s.freezeTokens <= 0 || !missed) return false
   store.set({ freezeTokens: s.freezeTokens - 1, frozenDays: [...s.frozenDays, key] })
   return true
 }

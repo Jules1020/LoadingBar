@@ -73,10 +73,12 @@ npm run dev
 
 Open http://localhost:3000. That's it: everything works as a guest with no configuration.
 
-### Optional: admin account
+### Optional: accounts and the admin
 
-One account can be the admin, with prototype tools in **Settings → Admin** (session speed-up, unlock everything,
-money, rigging the wheel, sending gifts to players, a site-wide announcement and more).
+Accounts (cloud saves, the podium) need a signing secret in `.env.local`; without one, sign-up and sign-in are
+switched off and everyone plays as a guest. One account can also be the admin, with prototype tools in
+**Settings → Admin** (session speed-up, unlock everything, money, rigging the wheel, sending gifts to players, a
+site-wide announcement and more).
 
 ```bash
 cp .env.example .env.local
@@ -84,7 +86,8 @@ npm run hash-password -- "choose a password"   # paste the output into ADMIN_PAS
 openssl rand -hex 32                           # paste into AUTH_SECRET
 ```
 
-Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and password.
+Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and password. `AUTH_SECRET` alone is enough
+for regular accounts.
 
 ### Scripts
 
@@ -93,7 +96,7 @@ Set `ADMIN_EMAIL`, restart the dev server, and sign in with that email and passw
 | `npm run dev` | Dev server on http://localhost:3000 |
 | `npm run build` / `npm start` | Production build and server |
 | `npm run check` | Typecheck, lint, unit tests and the contrast check, all at once |
-| `npm test` | Unit tests (Vitest) for the game logic |
+| `npm test` | Tests (Vitest): game logic, and the API routes against a temporary data folder |
 | `npm run contrast` | Checks every theme's text colours against WCAG AA |
 | `npm run measure` | Gzipped JS/CSS per page from a running server (default `localhost:3100`) |
 
@@ -122,7 +125,8 @@ code quality) is in [`docs/audit.md`](docs/audit.md).
 - The loading screens update the DOM directly at 60 fps from a small event emitter instead of re-rendering React.
 - Game state lives in a tiny external store (`useSyncExternalStore`), saved to `localStorage`, and synced to the
   account's cloud save when signed in. User audio and covers are kept in IndexedDB.
-- Auth is built in: scrypt password hashes, HMAC-signed http-only cookies, rate-limited logins.
+- Auth is built in: scrypt password hashes, HMAC-signed http-only cookies, and login throttling that counts only
+  failed attempts, per IP and per account.
 
 ```
 app/                 pages and API routes (auth, save, leaderboard, admin, inbox)

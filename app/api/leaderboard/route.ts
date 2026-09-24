@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { computeStreak, type DayLog } from "@/lib/streak"
 import { dayKey } from "@/lib/dates"
-import { listUsers, readSave } from "@/lib/server/db"
+import { listUsers, readSaveJson } from "@/lib/server/db"
 import { validProfile, type Profile } from "@/lib/profile"
 
 export const runtime = "nodejs"
@@ -18,8 +18,7 @@ export async function GET() {
   const today = dayKey(new Date())
   const rows = await Promise.all(
     users.map(async (u) => {
-      const raw = await readSave(u.email)
-      const s: SaveLike = raw ? JSON.parse(raw) : {}
+      const s: SaveLike = (await readSaveJson(u.email)) ?? {}
       const [local, domain] = u.email.split("@")
       const id = `${local[0]}***@${domain}`
       const p = validProfile(s.profile)
